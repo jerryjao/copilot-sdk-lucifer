@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.claude
+.agents
+tests
+.env
+*.log
+npm-debug.log

@@ -1,0 +1,4 @@
+[
+  "./example-projects/*",
+  "./example-projects/nested/**"
+]

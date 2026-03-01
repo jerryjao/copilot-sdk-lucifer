@@ -1,0 +1,269 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  check-version:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      should-publish: ${{ steps.check.outputs.should_publish }}
+      version: ${{ steps.package.outputs.version }}
+      tag-exists: ${{ steps.tag.outputs.exists }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get current version
+        id: package
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.package.outputs.version }}$"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Tag v${{ steps.package.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if should publish
+        id: check
+        run: |
+          set -euo pipefail
+
+          head_sha="${{ github.sha }}"
+          base_sha="${{ github.event.before }}"
+          head_version="${{ steps.package.outputs.version }}"
+
+          if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              base_sha="$(git rev-parse HEAD^)"
+            else
+              base_sha=""
+            fi
+          fi
+
+          if [ -z "$base_sha" ]; then
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No base commit to compare - skipping"
+            exit 0
+          fi
+
+          if ! git diff --name-only "$base_sha" "$head_sha" -- package.json | grep -q "package.json"; then
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "⏭️ package.json not changed - skipping"
+            exit 0
+          fi
+
+          base_version=""
+          if git show "$base_sha:package.json" >/dev/null 2>&1; then
+            base_version=$(git show "$base_sha:package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          fi
+
+          if [ "$base_version" = "$head_version" ]; then
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Version not changed - skipping"
+            exit 0
+          fi
+
+          if [ "${{ steps.tag.outputs.exists }}" == "true" ]; then
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "❌ Version changed but tag already exists"
+          else
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "✅ package.json changed and version bumped - will publish"
+          fi
+
+  publish-npm:
+    needs: check-version
+    if: needs.check-version.outputs.should-publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Published to NPM" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package**: \`@willh/telegram-copilot-bot\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: \`${{ needs.check-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "npm install @willh/telegram-copilot-bot@${{ needs.check-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  build-executables:
+    needs: [check-version, publish-npm]
+    if: needs.check-version.outputs.should-publish == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: windows
+            script: ./build-windows.ps1
+            args: ""
+          - os: ubuntu-latest
+            artifact: linux
+            script: ./build-linux.ps1
+            args: ""
+          - os: macos-latest
+            artifact: macos
+            script: ./build-macos.ps1
+            args: "-Arch both"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build executable
+        run: pwsh -File ${{ matrix.script }} ${{ matrix.args }}
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables-${{ matrix.artifact }}
+          path: dist/telegram-copilot-bot*
+
+  create-release:
+    needs: [check-version, publish-npm, build-executables]
+    if: needs.check-version.outputs.should-publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Pack package
+        run: npm pack
+
+      - name: Download executables
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: executables-*
+          merge-multiple: true
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ needs.check-version.outputs.version }}" -m "Release v${{ needs.check-version.outputs.version }}"
+          git push origin "v${{ needs.check-version.outputs.version }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ needs.check-version.outputs.version }}" \
+            --title "v${{ needs.check-version.outputs.version }}" \
+            --generate-notes \
+            --verify-tag \
+            *.tgz release-assets/*
