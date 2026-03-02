@@ -30,10 +30,27 @@ Use this prompt when asking an AI to write code for this repo:
 ```
 
 ## Security & Configuration Tips
-Store `TELEGRAM_BOT_TOKEN`, `DIRECTORY_PATTERNS`, and `COPILOT_MODEL` in `.env` and never commit secrets. Ensure the Copilot CLI is installed and available on `PATH` before running locally.
+以下環境變數皆存放於 `.env`，不得提交至版本控制：
+- `TELEGRAM_BOT_TOKEN`：Telegram BotFather 取得
+- `COPILOT_GITHUB_TOKEN`：**必須**使用 `gho_` 開頭的 OAuth token（見下方說明）
+- `DIRECTORY_PATTERNS`、`COPILOT_MODEL`：Bot 運行設定
+- `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`GOOGLE_REFRESH_TOKEN`：Google Drive 整合
 
-## Troubleshooting & Integration Notes
-詳細的連線問題排查與設定指南請參考 [docs/copilot-sdk-auth-and-gdrive.md](docs/copilot-sdk-auth-and-gdrive.md)，涵蓋：
-- **Copilot SDK 授權 401 問題**：`COPILOT_GITHUB_TOKEN` 必須使用 `gho_` 開頭的 OAuth token（透過 `gh auth token` 取得），fine-grained PAT（`github_pat_`）不支援 Copilot API。
-- **Google Drive API 連線**：GCP 專案需啟用 Drive / Docs / Sheets / Slides 四個 API，測試腳本為 `node scripts/test-gdrive-connection.mjs`。
-- **新電腦設定 Checklist**：完整的環境建置步驟。
+Ensure the Copilot CLI is installed and available on `PATH` before running locally.
+
+### COPILOT_GITHUB_TOKEN（關鍵）
+`COPILOT_GITHUB_TOKEN` **絕對不能**使用 fine-grained PAT（`github_pat_`），此類 token 不支援 Copilot API，會導致所有 `session.send()` 回傳 401 Authorization error，且錯誤訊息容易被誤判為 Google Drive 問題。
+
+正確設定方式：
+```bash
+gh auth login --scopes copilot   # 首次設定，確保有 copilot scope
+gh auth token                     # 取得 gho_... token，貼到 .env
+```
+
+`gho_` token 會定期過期，出現 401 時重新執行 `gh auth token` 更新即可。
+
+### Google Drive 連線
+GCP 專案需啟用 Drive / Docs / Sheets / Slides 四個 API。連線測試腳本：`node scripts/test-gdrive-connection.mjs`。
+
+## Troubleshooting
+詳細的連線問題排查、錯誤對照表與新電腦設定 Checklist 請參考 [docs/copilot-sdk-auth-and-gdrive.md](docs/copilot-sdk-auth-and-gdrive.md)。
