@@ -19,6 +19,64 @@ if (!process.env.GOOGLE_REFRESH_TOKEN) {
   console.log('   Run: npm run google-auth to enable Google Drive access.');
 }
 
+/**
+ * Verify that COPILOT_GITHUB_TOKEN is valid by creating a real session
+ * and sending a minimal prompt. Exits the process if authentication fails.
+ */
+async function verifyCopilotToken(): Promise<void> {
+  const token = process.env.COPILOT_GITHUB_TOKEN;
+  if (!token) {
+    console.error('❌ COPILOT_GITHUB_TOKEN 未設定。請執行 gh auth token 取得 token 並寫入 .env。');
+    process.exit(1);
+  }
+  if (token.startsWith('github_pat_')) {
+    console.error('❌ COPILOT_GITHUB_TOKEN 使用了 fine-grained PAT（github_pat_），此類 token 不支援 Copilot API。');
+    console.error('   請改用 gh auth token 取得 gho_ 開頭的 OAuth token。');
+    process.exit(1);
+  }
+
+  console.log('⏳ 驗證 Copilot Token...');
+  const client = new CopilotClient();
+  try {
+    await client.start();
+    const session = await client.createSession({ model: 'gpt-5-mini' });
+
+    const result = await new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      const timeout = setTimeout(() => resolve({ ok: false, error: '驗證逾時（15 秒）' }), 15000);
+      session.on((event: SessionEvent) => {
+        if (event.type === 'session.error') {
+          clearTimeout(timeout);
+          const data = (event as any).data;
+          resolve({ ok: false, error: data?.message ?? 'Unknown error' });
+        }
+        if (event.type === 'session.idle') {
+          clearTimeout(timeout);
+          resolve({ ok: true });
+        }
+      });
+      session.send({ prompt: 'hi' }).catch((err: Error) => {
+        clearTimeout(timeout);
+        resolve({ ok: false, error: err.message });
+      });
+    });
+
+    if (!result.ok) {
+      console.error(`❌ Copilot Token 驗證失敗：${result.error}`);
+      console.error('   請執行以下指令更新 token：');
+      console.error('   gh auth login --scopes copilot');
+      console.error('   gh auth token  # 將輸出的 gho_... 貼到 .env 的 COPILOT_GITHUB_TOKEN');
+      process.exit(1);
+    }
+
+    console.log('✅ Copilot Token 驗證成功');
+  } catch (err) {
+    console.error(`❌ Copilot Token 驗證失敗：${(err as Error).message}`);
+    process.exit(1);
+  } finally {
+    try { await client.stop(); } catch (_) { /* ignore */ }
+  }
+}
+
 // Helper to detect the disposed connection error thrown by vscode-jsonrpc
 function isDisposedConnectionError(err: any): boolean {
   if (!err) return false;
@@ -2028,6 +2086,9 @@ async function getProviderInfo(): Promise<string> {
 }
 
 (async () => {
+  // Verify Copilot token before starting the bot
+  await verifyCopilotToken();
+
   try {
     const dropped = await clearPendingUpdates(bot);
     if (dropped > 0) {
