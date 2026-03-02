@@ -31,3 +31,9 @@ Use this prompt when asking an AI to write code for this repo:
 
 ## Security & Configuration Tips
 Store `TELEGRAM_BOT_TOKEN`, `DIRECTORY_PATTERNS`, and `COPILOT_MODEL` in `.env` and never commit secrets. Ensure the Copilot CLI is installed and available on `PATH` before running locally.
+
+## Troubleshooting & Integration Notes
+詳細的連線問題排查與設定指南請參考 [docs/copilot-sdk-auth-and-gdrive.md](docs/copilot-sdk-auth-and-gdrive.md)，涵蓋：
+- **Copilot SDK 授權 401 問題**：`COPILOT_GITHUB_TOKEN` 必須使用 `gho_` 開頭的 OAuth token（透過 `gh auth token` 取得），fine-grained PAT（`github_pat_`）不支援 Copilot API。
+- **Google Drive API 連線**：GCP 專案需啟用 Drive / Docs / Sheets / Slides 四個 API，測試腳本為 `node scripts/test-gdrive-connection.mjs`。
+- **新電腦設定 Checklist**：完整的環境建置步驟。
