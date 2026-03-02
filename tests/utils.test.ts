@@ -14,6 +14,7 @@ import {
   availableModels,
   sessionEmojis,
   defaultModel,
+  extractGoogleFileInfo,
 } from '../src/utils.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -395,5 +396,50 @@ describe('constants', () => {
     it('should be gpt-5-mini', () => {
       expect(defaultModel).toBe('gpt-5-mini');
     });
+  });
+});
+
+describe('extractGoogleFileInfo', () => {
+  it('應解析 Google Docs 編輯 URL', () => {
+    expect(extractGoogleFileInfo('https://docs.google.com/document/d/DOC123/edit'))
+      .toEqual({ type: 'doc', id: 'DOC123' });
+  });
+
+  it('應解析帶 ?usp=sharing 的 Docs 分享 URL', () => {
+    expect(extractGoogleFileInfo('https://docs.google.com/document/d/DOC456/edit?usp=sharing'))
+      .toEqual({ type: 'doc', id: 'DOC456' });
+  });
+
+  it('應解析 Google Slides URL', () => {
+    expect(extractGoogleFileInfo('https://docs.google.com/presentation/d/SLIDE789/edit'))
+      .toEqual({ type: 'slide', id: 'SLIDE789' });
+  });
+
+  it('應解析 Google Sheets URL', () => {
+    expect(extractGoogleFileInfo('https://docs.google.com/spreadsheets/d/SHEET001/edit'))
+      .toEqual({ type: 'sheet', id: 'SHEET001' });
+  });
+
+  it('應解析 drive.google.com/file/d/ URL', () => {
+    expect(extractGoogleFileInfo('https://drive.google.com/file/d/IMG999/view'))
+      .toEqual({ type: 'drive', id: 'IMG999' });
+  });
+
+  it('應解析 drive.google.com/open?id= URL', () => {
+    expect(extractGoogleFileInfo('https://drive.google.com/open?id=ABC123'))
+      .toEqual({ type: 'drive', id: 'ABC123' });
+  });
+
+  it('非 Google URL 應回傳 null', () => {
+    expect(extractGoogleFileInfo('https://github.com/user/repo')).toBeNull();
+  });
+
+  it('Sheets URL 不應被解析為 doc', () => {
+    const r = extractGoogleFileInfo('https://docs.google.com/spreadsheets/d/X/edit');
+    expect(r?.type).toBe('sheet');
+  });
+
+  it('純 ID（非 URL）應回傳 null', () => {
+    expect(extractGoogleFileInfo('DOC123')).toBeNull();
   });
 });

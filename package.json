@@ -10,12 +10,14 @@
     "start": "node dist/index.js",
     "dev": "ts-node --esm src/index.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "google-auth": "node --loader ts-node/esm google-drive-tool/google-auth.ts"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.1.17",
     "dotenv": "^17.2.3",
     "glob": "^13.0.0",
+    "googleapis": "^171.4.0",
     "node-telegram-bot-api": "^0.67.0"
   },
   "devDependencies": {
@@ -24,6 +26,7 @@
     "@types/node-telegram-bot-api": "^0.64.13",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "engines": {

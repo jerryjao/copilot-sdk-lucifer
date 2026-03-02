@@ -143,3 +143,6 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Google Drive OAuth credentials and tokens (never commit)
+google-drive-tool/

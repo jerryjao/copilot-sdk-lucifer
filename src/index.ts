@@ -5,9 +5,19 @@ import { glob } from 'glob';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { buildGdriveTools } from './tools.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env if present
 dotenv.config();
+
+if (!process.env.GOOGLE_REFRESH_TOKEN) {
+  console.log('⚠️  GOOGLE_REFRESH_TOKEN not set — Google Drive tools are disabled.');
+  console.log('   Run: npm run google-auth to enable Google Drive access.');
+}
 
 // Helper to detect the disposed connection error thrown by vscode-jsonrpc
 function isDisposedConnectionError(err: any): boolean {
@@ -686,7 +696,7 @@ async function startSession(chatId: number, directory: string, model?: string) {
     console.log(`[DEBUG] Client started successfully`);
 
     console.log(`[DEBUG] Creating session with model: ${modelToUse}`);
-    const session = await client.createSession({ model: modelToUse });
+    const session = await client.createSession({ model: modelToUse, tools: buildGdriveTools() });
     console.log(`[DEBUG] Session created successfully`);
 
     // Register event handler with queue-based sequential processing
@@ -1003,6 +1013,18 @@ async function handleSessionEvent(bot: TelegramBot, chatId: number, event: Sessi
             state.awaitingFinal = false;
           }
         }
+      }
+      break;
+    case 'session.error':
+      {
+        const errData = event.data as any;
+        const errMsg = errData?.message ?? errData?.error ?? JSON.stringify(errData) ?? '未知錯誤';
+        console.error(`[DEBUG] Session error: ${errMsg}`);
+        state.busy = false;
+        state.awaitingFinal = false;
+        state.pendingCompletion = false;
+        state.currentPrompt = undefined;
+        await bot.sendMessage(chatId, `❗ Copilot session 發生錯誤：${errMsg}`);
       }
       break;
     default:
