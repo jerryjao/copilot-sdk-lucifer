@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { buildGdriveTools } from './tools.js';
+import { buildAsanaTools } from './asana-tools.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,10 @@ dotenv.config();
 if (!process.env.GOOGLE_REFRESH_TOKEN) {
   console.log('⚠️  GOOGLE_REFRESH_TOKEN not set — Google Drive tools are disabled.');
   console.log('   Run: npm run google-auth to enable Google Drive access.');
+}
+
+if (!process.env.ASANA_ACCESS_TOKEN) {
+  console.log('⚠️  ASANA_ACCESS_TOKEN not set — Asana tools are disabled.');
 }
 
 /**
@@ -746,7 +751,7 @@ async function startSession(chatId: number, directory: string, model?: string) {
     console.log(`[DEBUG] Client started successfully`);
 
     console.log(`[DEBUG] Creating session with model: ${modelToUse}`);
-    const session = await client.createSession({ model: modelToUse, tools: buildGdriveTools() });
+    const session = await client.createSession({ model: modelToUse, tools: [...buildGdriveTools(), ...buildAsanaTools()] });
     console.log(`[DEBUG] Session created successfully`);
 
     // Register event handler with queue-based sequential processing
