@@ -1,6 +1,6 @@
 /**
  * 真實 Google Drive 連線測試腳本
- * 執行方式: node scripts/test-gdrive-connection.mjs
+ * 執行方式: node scripts/test-gdrive-mcp.mjs
  */
 import { createRequire } from 'module';
 import { readFileSync } from 'fs';

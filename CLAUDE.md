@@ -50,7 +50,7 @@ gh auth token                     # 取得 gho_... token，貼到 .env
 `gho_` token 會定期過期，出現 401 時重新執行 `gh auth token` 更新即可。
 
 ### Google Drive 連線
-GCP 專案需啟用 Drive / Docs / Sheets / Slides 四個 API。連線測試腳本：`node scripts/test-gdrive-connection.mjs`。
+GCP 專案需啟用 Drive / Docs / Sheets / Slides 四個 API。連線測試腳本：`node scripts/test-gdrive-mcp.mjs`。
 
 ## Troubleshooting
 詳細的連線問題排查、錯誤對照表與新電腦設定 Checklist 請參考 [docs/copilot-sdk-auth-and-gdrive.md](docs/copilot-sdk-auth-and-gdrive.md)。

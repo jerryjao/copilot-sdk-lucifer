@@ -124,25 +124,57 @@ Google Sheets API has not been used in project XXXXX before or it is disabled.
 
 ### Google Drive 連線測試腳本
 
+#### 1. 基礎連線測試（`test-gdrive-mcp.mjs`）
+
+驗證 OAuth2 認證與 API 可用性：
+
 ```bash
-node scripts/test-gdrive-connection.mjs
+node scripts/test-gdrive-mcp.mjs
 ```
 
 此腳本會依序測試：
 1. OAuth2 Access Token 取得
 2. Google Drive API（列出最近 5 個檔案）
-3. Google Docs API
-4. Google Sheets API
-5. Google Slides API
+3. Google Docs API（探測連線狀態）
+4. Google Sheets API（探測連線狀態）
+5. Google Slides API（探測連線狀態）
+
+#### 2. 工具功能實際測試（`test-gdrive-tools.mjs`）
+
+測試四個 Google Drive 工具的實際讀取功能。此腳本包含預設測試案例（無需提供參數）：
+
+```bash
+# 使用預設測試案例
+node scripts/test-gdrive-tools.mjs
+
+# 或查看說明
+node scripts/test-gdrive-tools.mjs --help
+
+# 或提供自訂的 Google 文件 ID
+node scripts/test-gdrive-tools.mjs [docId] [slideId] [sheetId] [imageId]
+```
+
+此腳本會測試：
+- ✅ `gdrive_read_document` — 讀取 Google Docs 文字內容（含標題層級）
+- ✅ `gdrive_read_slides` — 讀取 Google Slides 所有頁面內容
+- ✅ `gdrive_read_spreadsheet` — 讀取 Google Sheets（tab 分隔格式）
+- ✅ `gdrive_get_image` — 下載 Google Drive 圖片檔案
+
+每個測試會顯示：
+- 執行結果（成功/失敗）
+- 資料統計（字元數、行數、位元組數）
+- 內容預覽（前 5 行）
 
 ### 工具清單
 
-| Tool 名稱 | 功能 |
-|---|---|
-| `gdrive_read_document` | 讀取 Google Docs 文字內容 |
-| `gdrive_read_slides` | 讀取 Google Slides 每頁文字 |
-| `gdrive_read_spreadsheet` | 讀取 Google Sheets（tab 分隔） |
-| `gdrive_get_image` | 下載 Google Drive 圖片供 AI 分析 |
+| Tool 名稱 | 功能 | 來源 |
+|---|---|---|
+| `gdrive_read_document` | 讀取 Google Docs 文字內容 | `fetchGoogleDocContent()` |
+| `gdrive_read_slides` | 讀取 Google Slides 每頁文字 | `fetchGoogleSlidesContent()` |
+| `gdrive_read_spreadsheet` | 讀取 Google Sheets（tab 分隔） | `fetchGoogleSheetsContent()` |
+| `gdrive_get_image` | 下載 Google Drive 圖片供 AI 分析 | `fetchGoogleDriveImageBuffer()` |
+
+**實作位置**：`src/utils.ts`（第 313～470 行）
 
 ---
 
@@ -157,6 +189,8 @@ node scripts/test-gdrive-connection.mjs
    - `COPILOT_GITHUB_TOKEN`：執行 `gh auth token` 取得（必須是 `gho_` 開頭）
    - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`：從 GCP Console 取得
    - `GOOGLE_REFRESH_TOKEN`：執行 `npm run google-auth` 取得
-6. 確認 GCP 專案已啟用 Drive / Docs / Sheets / Slides 四個 API
-7. 執行 `node scripts/test-gdrive-connection.mjs` 驗證 Google Drive
+6. 確認 GCP 專案已啟用 Drive / Docs / Sheets / Slides 四個 API（詳見「GCP 專案需啟用的 API」段落）
+7. 驗證連線：
+   - 執行 `node scripts/test-gdrive-mcp.mjs` 驗證基礎認證
+   - 執行 `node scripts/test-gdrive-tools.mjs` 驗證工具功能（使用預設測試案例）
 8. 執行 `npm start` 啟動 bot
