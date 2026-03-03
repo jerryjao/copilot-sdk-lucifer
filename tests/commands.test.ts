@@ -43,9 +43,9 @@ describe('Command Parsing', () => {
 
     it('should extract model index correctly', () => {
       const regex = /\/model(?:\s+(\d+))?/;
-      const match = '/model 12'.match(regex);
+      const match = '/model 5'.match(regex);
       const index = parseModelIndex(match?.[1], availableModels.length);
-      expect(index).toBe(11);
+      expect(index).toBe(4);
     });
   });
 
@@ -127,8 +127,8 @@ describe('Model Selection Logic', () => {
     });
 
     expect(lines.length).toBe(availableModels.length);
-    expect(lines[11]).toContain('✓');
-    expect(lines[11]).toContain('gpt-5-mini');
+    expect(lines[4]).toContain('✓');
+    expect(lines[4]).toContain('gpt-5-mini');
     expect(lines[0]).not.toContain('✓');
   });
 
@@ -138,9 +138,9 @@ describe('Model Selection Logic', () => {
     };
 
     expect(isValidModelIndex('1')).toBe(true);
-    expect(isValidModelIndex('14')).toBe(true);
+    expect(isValidModelIndex('6')).toBe(true);
     expect(isValidModelIndex('0')).toBe(false);
-    expect(isValidModelIndex('15')).toBe(false);
+    expect(isValidModelIndex('7')).toBe(false);
     expect(isValidModelIndex('abc')).toBe(false);
   });
 });

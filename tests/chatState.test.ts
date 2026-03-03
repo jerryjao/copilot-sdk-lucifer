@@ -138,16 +138,16 @@ describe('ChatState Management', () => {
   describe('model selection', () => {
     it('should validate model index correctly', () => {
       expect(parseModelIndex('1', availableModels.length)).toBe(0);
-      expect(parseModelIndex('14', availableModels.length)).toBe(13);
-      expect(parseModelIndex('15', availableModels.length)).toBe(-1);
+      expect(parseModelIndex('6', availableModels.length)).toBe(5);
+      expect(parseModelIndex('7', availableModels.length)).toBe(-1);
       expect(parseModelIndex('0', availableModels.length)).toBe(-1);
     });
 
     it('should get correct model from index', () => {
       const index = parseModelIndex('1', availableModels.length);
-      expect(availableModels[index]).toBe('claude-sonnet-4.5');
-      
-      const index2 = parseModelIndex('12', availableModels.length);
+      expect(availableModels[index]).toBe('claude-sonnet-4.6');
+
+      const index2 = parseModelIndex('5', availableModels.length);
       expect(availableModels[index2]).toBe('gpt-5-mini');
     });
   });

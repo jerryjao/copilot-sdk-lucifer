@@ -371,12 +371,12 @@ describe('constants', () => {
   describe('availableModels', () => {
     it('should contain expected models', () => {
       expect(availableModels).toContain('gpt-5-mini');
-      expect(availableModels).toContain('claude-sonnet-4');
+      expect(availableModels).toContain('claude-sonnet-4.6');
       expect(availableModels).toContain('gemini-3-pro-preview');
     });
 
     it('should have correct number of models', () => {
-      expect(availableModels.length).toBe(14);
+      expect(availableModels.length).toBe(6);
     });
   });
 
