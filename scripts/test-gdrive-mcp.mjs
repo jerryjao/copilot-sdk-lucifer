@@ -2,7 +2,6 @@
  * 真實 Google Drive 連線測試腳本
  * 執行方式: node scripts/test-gdrive-mcp.mjs
  */
-import { createRequire } from 'module';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -67,54 +66,50 @@ try {
 }
 console.log('');
 
-// 3. Google Docs API 可用性測試
-console.log('⏳ 測試 3: Google Docs API 可用性...');
+// 3. Google Docs API 可用性測試（真實檔案）
+console.log('⏳ 測試 3: Google Docs API 可用性（讀取真實檔案）...');
 try {
   const docs = google.docs({ version: 'v1', auth });
-  // 嘗試存取一個不存在的文件，預期得到 404（代表 API 正常回應）
-  await docs.documents.get({ documentId: 'test-nonexistent-id-123' });
+  const res = await docs.documents.get({ documentId: '1q18UbtG2GdkIE1QCMTknVuQxXIzbvN5BtJsMiN1MUR8' });
+  console.log(`✅ Docs API 成功讀取檔案: "${res.data.title}"`);
 } catch (err) {
   const status = err?.response?.status ?? err?.status ?? err?.code;
-  if (status === 404) {
-    console.log('✅ Docs API 回應正常（404 預期）');
-  } else if (status === 401 || status === 403) {
+  if (status === 401 || status === 403) {
     console.error(`❌ Docs API 認證錯誤 (${status}): ${err.message}`);
   } else {
-    console.log(`⚠️  Docs API 回應: ${status ?? err.message}`);
+    console.error(`❌ Docs API 讀取失敗 (${status}): ${err.message}`);
   }
 }
 console.log('');
 
-// 4. Google Sheets API 可用性測試
-console.log('⏳ 測試 4: Google Sheets API 可用性...');
+// 4. Google Sheets API 可用性測試（真實檔案）
+console.log('⏳ 測試 4: Google Sheets API 可用性（讀取真實檔案）...');
 try {
   const sheets = google.sheets({ version: 'v4', auth });
-  await sheets.spreadsheets.get({ spreadsheetId: 'test-nonexistent-id-123' });
+  const res = await sheets.spreadsheets.get({ spreadsheetId: '1Nv3VeXoNnDL-TjmyeKb-XxY4SK25ieIVCNy-_UW0lmE' });
+  console.log(`✅ Sheets API 成功讀取檔案: "${res.data.properties.title}"`);
 } catch (err) {
   const status = err?.response?.status ?? err?.status ?? err?.code;
-  if (status === 404) {
-    console.log('✅ Sheets API 回應正常（404 預期）');
-  } else if (status === 401 || status === 403) {
+  if (status === 401 || status === 403) {
     console.error(`❌ Sheets API 認證錯誤 (${status}): ${err.message}`);
   } else {
-    console.log(`⚠️  Sheets API 回應: ${status ?? err.message}`);
+    console.error(`❌ Sheets API 讀取失敗 (${status}): ${err.message}`);
   }
 }
 console.log('');
 
-// 5. Google Slides API 可用性測試
-console.log('⏳ 測試 5: Google Slides API 可用性...');
+// 5. Google Slides API 可用性測試（真實檔案）
+console.log('⏳ 測試 5: Google Slides API 可用性（讀取真實檔案）...');
 try {
   const slides = google.slides({ version: 'v1', auth });
-  await slides.presentations.get({ presentationId: 'test-nonexistent-id-123' });
+  const res = await slides.presentations.get({ presentationId: '1ZtY8bd2I6OrN1OyT7VSpr7bw2wy5DPHlu99xr1kGe4E' });
+  console.log(`✅ Slides API 成功讀取檔案: "${res.data.title}"`);
 } catch (err) {
   const status = err?.response?.status ?? err?.status ?? err?.code;
-  if (status === 404) {
-    console.log('✅ Slides API 回應正常（404 預期）');
-  } else if (status === 401 || status === 403) {
+  if (status === 401 || status === 403) {
     console.error(`❌ Slides API 認證錯誤 (${status}): ${err.message}`);
   } else {
-    console.log(`⚠️  Slides API 回應: ${status ?? err.message}`);
+    console.error(`❌ Slides API 讀取失敗 (${status}): ${err.message}`);
   }
 }
 console.log('');
