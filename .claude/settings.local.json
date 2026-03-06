@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start:*)",
+      "Bash(npm install:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Bash(npm i:*)",
+      "Bash(tar:*)",
+      "Bash(gws:*)",
+      "Bash(export:*)",
+      "Bash(npm ls:*)"
+    ]
+  }
+}
